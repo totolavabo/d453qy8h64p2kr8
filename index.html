@@ -1,114 +1,335 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="robots" content="noindex, nofollow">
-    <title>Crafting Calculator - Mon Jeu</title>
-    <style>
-        body { font-family: sans-serif; display: flex; gap: 20px; padding: 20px; background: #1a1a1a; color: white; }
-        .container { display: flex; width: 100%; }
-        
-        /* Colonne Gauche */
-        .items-list { flex: 2; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
-        .item-card { 
-            background: #333; padding: 15px; border-radius: 8px; cursor: pointer; position: relative;
-            border: 2px solid transparent; transition: 0.2s;
-        }
-        .item-card:hover { border-color: #00ffcc; }
-
-        /* Tooltip (Survol) */
-        .tooltip {
-            visibility: hidden; width: 200px; background-color: #555; color: #fff; text-align: center;
-            border-radius: 6px; padding: 5px; position: absolute; z-index: 1; bottom: 125%; left: 50%;
-            margin-left: -100px; opacity: 0; transition: opacity 0.3s;
-        }
-        .item-card:hover .tooltip { visibility: visible; opacity: 1; }
-
-        /* Colonne Droite */
-        .shopping-list { flex: 1; background: #222; padding: 20px; border-radius: 8px; height: fit-content; position: sticky; top: 20px; }
-        .craft-item { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px dashed #444; padding-bottom: 5px; }
-    </style>
+<meta charset="UTF-8">
+<title>Day of Decay BANKS</title>
+<style>
+:root{
+  --primary:#00ffcc;
+  --bg:#121212;
+  --card:#1e1e1e;
+  --text:#e0e0e0;
+  --danger:#ff5555;
+  --hover:#272727;
+}
+body{
+  font-family: 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  margin:0;
+  display:flex;
+  height:100vh;
+}
+.left-panel{
+  flex:2;
+  padding:20px;
+  overflow-y:auto;
+  border-right:1px solid #333;
+}
+.right-panel{
+  flex:1;
+  padding:20px;
+  background:#161616;
+  overflow-y:auto;
+}
+h2{ margin-top:0; margin-bottom:15px; }
+.tabs{ display:flex; gap:10px; margin-bottom:20px; }
+.tab-btn{
+  background:#252525;
+  color:white;
+  border:1px solid #444;
+  padding:8px 18px;
+  cursor:pointer;
+  border-radius:5px;
+  transition:0.2s;
+}
+.tab-btn:hover{ background:var(--hover); }
+.tab-btn.active{
+  background:var(--primary);
+  color:black;
+  font-weight:bold;
+  border-color:var(--primary);
+}
+.search-bar{
+  width:100%;
+  padding:10px;
+  margin-bottom:15px;
+  border-radius:5px;
+  border:1px solid #444;
+  background:#252525;
+  color:white;
+  box-sizing:border-box;
+  transition:0.2s;
+}
+.search-bar:focus{
+  outline:none;
+  border-color:var(--primary);
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:var(--card);
+  border-radius:8px;
+  overflow:hidden;
+}
+th, td{
+  padding:10px 12px;
+  text-align:left;
+  border-bottom:1px solid #333;
+  font-size:0.95em;
+}
+th{
+  background:#2d2d2d;
+  color:var(--primary);
+  font-size:12px;
+  text-transform:uppercase;
+}
+tr:hover{ background:var(--hover); cursor:pointer; }
+.qty-input{
+  width:50px;
+  padding:4px;
+  border-radius:4px;
+  border:1px solid #555;
+  background:#121212;
+  color:white;
+}
+.btn-add{
+  background:var(--primary);
+  color:#000;
+  border:none;
+  padding:6px 14px;
+  border-radius:4px;
+  cursor:pointer;
+  font-weight:bold;
+  transition:0.2s;
+}
+.btn-add:hover{ opacity:0.9; }
+.list-item{
+  display:flex;
+  justify-content:space-between;
+  background:#252525;
+  padding:8px 12px;
+  border-radius:5px;
+  margin-bottom:6px;
+  border-left:4px solid var(--primary);
+  transition:0.2s;
+}
+.list-item:hover{ background:var(--hover); }
+.stock-section{
+  background:#222;
+  border-radius:8px;
+  margin-top:20px;
+  border:1px solid #444;
+  display:none;
+  overflow:hidden;
+}
+summary{
+  padding:12px;
+  cursor:pointer;
+  background:#2a2a2a;
+  color:var(--primary);
+  font-weight:bold;
+  list-style:none;
+}
+summary:hover{ background:#333; }
+.stock-content{ padding:12px 15px; }
+.stock-row{
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:6px;
+}
+.stock-input{
+  width:60px;
+  background:#111;
+  border:1px solid #444;
+  color:var(--primary);
+  padding:4px;
+  border-radius:4px;
+  text-align:center;
+}
+.manquant{color:var(--danger);font-weight:bold;}
+.possede{color:var(--primary);font-weight:bold;}
+.copy-btn, .clear-btn{
+  background:var(--primary);
+  border:none;
+  padding:10px;
+  width:100%;
+  margin-top:8px;
+  cursor:pointer;
+  font-weight:bold;
+  border-radius:4px;
+  transition:0.2s;
+}
+.copy-btn:hover, .clear-btn:hover{ opacity:0.9; }
+.clear-btn{
+  background:none;
+  border:1px solid var(--danger);
+  color:var(--danger);
+}
+</style>
 </head>
 <body>
 
-    <div class="container">
-        <div class="items-list" id="itemsMenu">
-            </div>
+<div class="left-panel">
+<h2>Day of Decay - CREW BANKS</h2>
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('objets')">Objets</button>
+  <button class="tab-btn" onclick="switchTab('constructions')">Construction</button>
+  <button class="tab-btn" onclick="switchTab('armes')">Armes</button>
+  <button class="tab-btn" onclick="switchTab('munitions')">Munitions</button>
+</div>
+<input type="text" id="searchInput" class="search-bar" placeholder="Rechercher..." onkeyup="filterTable()">
+<table>
+<thead>
+<tr>
+<th>Désignation</th>
+<th>Requis</th>
+<th>Qté</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody id="tableBody"></tbody>
+</table>
+</div>
 
-        <div class="shopping-list">
-            <h2>Ma Liste de Craft</h2>
-            <div id="selectedItems">
-                <p>Cliquez sur un item pour l'ajouter.</p>
-            </div>
-            <hr>
-            <h3>Total Matériaux :</h3>
-            <ul id="totalResources"></ul>
-            <button onclick="clearAll()" style="margin-top:20px; cursor:pointer;">Vider la liste</button>
-        </div>
-    </div>
+<div class="right-panel">
+<h2>Ma Liste de Craft</h2>
+<div id="selectedItems"></div>
+<details id="stockSection" class="stock-section">
+  <summary>📦 Ce que j'ai déjà</summary>
+  <div class="stock-content" id="stockList"></div>
+</details>
+<div id="resultsArea" style="display:none;">
+<hr>
+<h3>Besoin restant</h3>
+<ul id="totalResources" style="list-style:none;padding:0;"></ul>
+<button class="copy-btn" onclick="copyResources()">📋 Copier la liste</button>
+<button class="clear-btn" onclick="clearAll()">Vider la liste</button>
+</div>
+</div>
 
-    <script>
-        // TA BASE DE DONNÉES (Ajoute tes items ici)
-        const database = [
-            { id: 1, name: "Épée en Fer", ingredients: { "Fer": 3, "Bois": 1 }, info: "Fer : Mines d'Est / Bois : Forêt" },
-            { id: 2, name: "Bouclier", ingredients: { "Fer": 5, "Cuir": 2 }, info: "Cuir : Chasse aux loups" },
-            { id: 3, name: "Potion Soin", ingredients: { "Herbe": 2, "Fiole": 1 }, info: "Herbe : Plaines / Fiole : Marchand" }
-        ];
+<script>
+// Variables globales
+let database = {};
+let shoppingList = [];
+let myStock = {};
+let currentCategory = "";
 
-        let cart = [];
+// Charger JSON depuis fichier local
+fetch("crafts.json")
+  .then(res => res.json())
+  .then(data => {
+    database = data;
+    // Définir la première catégorie par défaut
+    currentCategory = Object.keys(database)[0];
+    renderTabs();
+    renderTable();
+  })
+  .catch(err => console.error("Erreur chargement crafts.json :", err));
 
-        function renderItems() {
-            const menu = document.getElementById('itemsMenu');
-            database.forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'item-card';
-                card.innerHTML = `
-                    <strong>${item.name}</strong>
-                    <span class="tooltip">${item.info}</span>
-                `;
-                card.onclick = () => addToCart(item);
-                menu.appendChild(card);
-            });
-        }
+// Générer dynamiquement les onglets
+function renderTabs() {
+  const tabsDiv = document.querySelector(".tabs");
+  tabsDiv.innerHTML = "";
+  Object.keys(database).forEach((cat, index) => {
+    const btn = document.createElement("button");
+    btn.className = "tab-btn";
+    if (cat === currentCategory) btn.classList.add("active");
+    btn.textContent = cat.charAt(0).toUpperCase() + cat.slice(1);
+    btn.onclick = () => switchTab(cat);
+    tabsDiv.appendChild(btn);
+  });
+}
 
-        function addToCart(item) {
-            cart.push(item);
-            updateUI();
-        }
+// Générer la table
+function renderTable() {
+  const body = document.getElementById("tableBody");
+  if (!database[currentCategory]) return;
+  let items = [...database[currentCategory]];
+  items.sort((a, b) => a.name.localeCompare(b.name));
+  body.innerHTML = items.map(item => {
+    const ing = Object.entries(item.ingredients)
+      .map(([n, q]) => `${q} ${n}`).join(", ");
+    return `<tr>
+      <td><strong>${item.name}</strong></td>
+      <td>${ing}</td>
+      <td><input type="number" value="1" min="1" id="qty-${item.id}" class="qty-input"></td>
+      <td><button class="btn-add" onclick="addToCraft('${item.id}')">Ajouter</button></td>
+    </tr>`;
+  }).join("");
+}
 
-        function updateUI() {
-            const listDiv = document.getElementById('selectedItems');
-            const resUl = document.getElementById('totalResources');
-            listDiv.innerHTML = "";
-            resUl.innerHTML = "";
+// Ajouter à la liste de craft
+function addToCraft(id) {
+  // Regrouper toutes les catégories
+  const allItems = Object.values(database).flat();
+  const item = allItems.find(i => i.id === id);
+  if (!item) return;
+  const qty = parseInt(document.getElementById(`qty-${id}`).value) || 1;
+  const existing = shoppingList.find(i => i.id === id);
+  if (existing) existing.selectedQty += qty;
+  else shoppingList.push({...item, selectedQty: qty});
+  updateUI();
+}
 
-            let totals = {};
+// Mettre à jour l'UI
+function updateUI() {
+  const selectedDiv = document.getElementById("selectedItems");
+  const totalUl = document.getElementById("totalResources");
+  const stockDiv = document.getElementById("stockList");
+  selectedDiv.innerHTML = ""; totalUl.innerHTML = "";
+  if (shoppingList.length === 0) {
+    document.getElementById("stockSection").style.display = "none";
+    document.getElementById("resultsArea").style.display = "none";
+    return;
+  }
+  document.getElementById("stockSection").style.display = "block";
+  document.getElementById("resultsArea").style.display = "block";
+  shoppingList.sort((a,b)=>a.name.localeCompare(b.name));
+  let totals = {};
+  shoppingList.forEach((item,index)=>{
+    selectedDiv.innerHTML += `<div class="list-item"><span>${item.selectedQty}x <strong>${item.name}</strong></span>
+      <span onclick="removeItem(${index})" style="cursor:pointer;color:red">✕</span></div>`;
+    for(let [res,val] of Object.entries(item.ingredients))
+      totals[res]=(totals[res]||0)+(val*item.selectedQty);
+  });
+  const sorted = Object.keys(totals).sort();
+  stockDiv.innerHTML = sorted.map(res=>{
+    const val = myStock[res] || 0;
+    return `<div class="stock-row"><label>${res}</label>
+      <input type="number" class="stock-input" value="${val}" oninput="updateStock('${res}',this.value)">
+    </div>`;
+  }).join("");
+  sorted.forEach(res=>{
+    const total = totals[res], have = myStock[res]||0, miss = total-have;
+    if(miss<=0) totalUl.innerHTML += `<li class="possede">✅ ${res} OK (${have}/${total})</li>`;
+    else totalUl.innerHTML += `<li class="manquant">❌ Manque ${miss} ${res}</li>`;
+  });
+}
 
-            // Afficher les items sélectionnés
-            cart.forEach((item, index) => {
-                listDiv.innerHTML += `<div class="craft-item">${item.name} <span style="color:red; cursor:pointer" onclick="removeItem(${index})">x</span></div>`;
-                
-                // Calculer les totaux
-                for (let res in item.ingredients) {
-                    totals[res] = (totals[res] || 0) + item.ingredients[res];
-                }
-            });
+// Fonctions utilitaires
+function updateStock(res,val){ myStock[res]=parseInt(val)||0; updateUI(); }
+function removeItem(index){ shoppingList.splice(index,1); updateUI(); }
+function clearAll(){ shoppingList=[]; updateUI(); }
+function filterTable(){
+  let input=document.getElementById("searchInput").value.toLowerCase();
+  document.querySelectorAll("#tableBody tr").forEach(r=>{
+    r.style.display = r.innerText.toLowerCase().includes(input) ? "" : "none";
+  });
+}
+function switchTab(cat){
+  currentCategory = cat;
+  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+  renderTabs(); // rafraîchir les onglets pour l'état actif
+  renderTable();
+}
+function copyResources(){
+  let text="Besoin ressources :\n";
+  document.querySelectorAll("#totalResources li").forEach(li=>text+=li.innerText+"\n");
+  navigator.clipboard.writeText(text);
+  alert("Liste copiée !");
+}
+</script>
 
-            // Afficher le total des ressources
-            for (let res in totals) {
-                resUl.innerHTML += `<li>${res} : <strong>${totals[res]}</strong></li>`;
-            }
-        }
-
-        function removeItem(index) {
-            cart.splice(index, 1);
-            updateUI();
-        }
-
-        function clearAll() { cart = []; updateUI(); }
-
-        renderItems();
-    </script>
 </body>
 </html>
