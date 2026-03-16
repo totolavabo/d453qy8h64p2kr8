@@ -123,13 +123,19 @@ tr:hover{ background:var(--hover); cursor:pointer; }
   display:none;
   overflow:hidden;
 }
-summary{
-  padding:12px;
-  cursor:pointer;
-  background:#2a2a2a;
-  color:var(--primary);
-  font-weight:bold;
-  list-style:none;
+summary {
+  padding: 12px;
+  cursor: pointer;
+  background: #2a2a2a;
+  color: var(--primary);
+  font-weight: bold;
+  list-style: none;
+
+  /* Centrage du texte */
+  display: flex;
+  justify-content: center;   /* centre horizontalement */
+  align-items: center;       /* centre verticalement */
+  text-align: center;
 }
 summary:hover{ background:#333; }
 .stock-content{ padding:12px 15px; }
@@ -193,19 +199,32 @@ summary:hover{ background:#333; }
 </div>
 
 <div class="right-panel">
-<h2>Ma Liste de Craft</h2>
-<div id="selectedItems"></div>
-<details id="stockSection" class="stock-section">
-  <summary>📦 Ce que j'ai déjà</summary>
-  <div class="stock-content" id="stockList"></div>
+  <h2>Ma Liste de Craft</h2>
+  <div id="selectedItems"></div>
+
+  <div id="resultsArea" style="display:none;">
+    <hr>
+
+    <!-- Déplacer la section stock ici, avant le bouton Copier -->
+
+
+    <h3>Besoin restant</h3>
+    <ul id="totalResources" style="list-style:none;padding:0;"></ul>
+    <details id="stockSection" class="stock-section">
+    <summary>📦 Ressources Possédées</summary>
+    <table style="width:100%; border-collapse:collapse; margin-top:10px;">
+    <thead>
+      <tr style="background:#2a2a2a; color:var(--primary); text-align:left;">
+        <th style="padding:6px 10px;">Ressource</th>
+        <th style="padding:6px 10px;">Qté</th>
+      </tr>
+    </thead>
+    <tbody id="stockList"></tbody>
+  </table>
 </details>
-<div id="resultsArea" style="display:none;">
-<hr>
-<h3>Besoin restant</h3>
-<ul id="totalResources" style="list-style:none;padding:0;"></ul>
-<button class="copy-btn" onclick="copyResources()">📋 Copier la liste</button>
-<button class="clear-btn" onclick="clearAll()">Vider la liste</button>
-</div>
+    <button class="copy-btn" onclick="copyResources()">📋 Copier la liste</button>
+    <button class="clear-btn" onclick="clearAll()">Vider la liste</button>
+  </div>
 </div>
 
 <script>
@@ -294,11 +313,14 @@ function updateUI() {
       totals[res]=(totals[res]||0)+(val*item.selectedQty);
   });
   const sorted = Object.keys(totals).sort();
-  stockDiv.innerHTML = sorted.map(res=>{
-    const val = myStock[res] || 0;
-    return `<div class="stock-row"><label>${res}</label>
+  stockDiv.innerHTML = sorted.map(res => {
+  const val = myStock[res] || 0;
+  return `<tr>
+    <td style="padding:6px 10px;">${res}</td>
+    <td style="padding:6px 10px;">
       <input type="number" class="stock-input" value="${val}" oninput="updateStock('${res}',this.value)">
-    </div>`;
+    </td>
+  </tr>`;
   }).join("");
   sorted.forEach(res=>{
     const total = totals[res], have = myStock[res]||0, miss = total-have;
@@ -324,10 +346,38 @@ function switchTab(cat){
   renderTable();
 }
 function copyResources(){
-  let text="Besoin ressources :\n";
-  document.querySelectorAll("#totalResources li").forEach(li=>text+=li.innerText+"\n");
-  navigator.clipboard.writeText(text);
-  alert("Liste copiée !");
+  if(shoppingList.length === 0){
+    alert("La liste de craft est vide !");
+    return;
+  }
+
+  let text = "Liste des crafts :\n";
+
+  // Ajouter chaque craft avec sa quantité
+  shoppingList.forEach(item => {
+    text += `${item.selectedQty}x ${item.name}\n`;
+  });
+
+  // Ajouter un séparateur et total des ressources
+  text += "\nTotal des ressources :\n";
+
+  // Calculer les totaux
+  let totals = {};
+  shoppingList.forEach(item => {
+    for(let [res,val] of Object.entries(item.ingredients)){
+      totals[res] = (totals[res] || 0) + val * item.selectedQty;
+    }
+  });
+
+  // Trier les ressources par nom
+  Object.keys(totals).sort().forEach(res => {
+    text += `${totals[res]} ${res}\n`;
+  });
+
+  // Copier dans le presse-papier
+  navigator.clipboard.writeText(text)
+    .then(() => alert("Liste copiée !"))
+    .catch(err => alert("Erreur copie : " + err));
 }
 </script>
 
