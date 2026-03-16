@@ -1,134 +1,114 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="robots" content="noindex, nofollow">
-<title>Calculateur de Crafts</title>
-<style>
-body{
-    font-family: Arial;
-    max-width: 900px;
-    margin:auto;
-}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Crafting Calculator - Mon Jeu</title>
+    <style>
+        body { font-family: sans-serif; display: flex; gap: 20px; padding: 20px; background: #1a1a1a; color: white; }
+        .container { display: flex; width: 100%; }
+        
+        /* Colonne Gauche */
+        .items-list { flex: 2; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+        .item-card { 
+            background: #333; padding: 15px; border-radius: 8px; cursor: pointer; position: relative;
+            border: 2px solid transparent; transition: 0.2s;
+        }
+        .item-card:hover { border-color: #00ffcc; }
 
-.craft{
-    border:1px solid #ccc;
-    padding:10px;
-    margin:10px;
-}
+        /* Tooltip (Survol) */
+        .tooltip {
+            visibility: hidden; width: 200px; background-color: #555; color: #fff; text-align: center;
+            border-radius: 6px; padding: 5px; position: absolute; z-index: 1; bottom: 125%; left: 50%;
+            margin-left: -100px; opacity: 0; transition: opacity 0.3s;
+        }
+        .item-card:hover .tooltip { visibility: visible; opacity: 1; }
 
-button{
-    margin-top:5px;
-}
-
-#result{
-    background:#f4f4f4;
-    padding:10px;
-    margin-top:20px;
-}
-</style>
+        /* Colonne Droite */
+        .shopping-list { flex: 1; background: #222; padding: 20px; border-radius: 8px; height: fit-content; position: sticky; top: 20px; }
+        .craft-item { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px dashed #444; padding-bottom: 5px; }
+    </style>
 </head>
-
 <body>
 
-<h1>Liste des Crafts</h1>
+    <div class="container">
+        <div class="items-list" id="itemsMenu">
+            </div>
 
-<div id="crafts"></div>
+        <div class="shopping-list">
+            <h2>Ma Liste de Craft</h2>
+            <div id="selectedItems">
+                <p>Cliquez sur un item pour l'ajouter.</p>
+            </div>
+            <hr>
+            <h3>Total Matériaux :</h3>
+            <ul id="totalResources"></ul>
+            <button onclick="clearAll()" style="margin-top:20px; cursor:pointer;">Vider la liste</button>
+        </div>
+    </div>
 
-<h2>Matériaux nécessaires</h2>
-<div id="result"></div>
+    <script>
+        // TA BASE DE DONNÉES (Ajoute tes items ici)
+        const database = [
+            { id: 1, name: "Épée en Fer", ingredients: { "Fer": 3, "Bois": 1 }, info: "Fer : Mines d'Est / Bois : Forêt" },
+            { id: 2, name: "Bouclier", ingredients: { "Fer": 5, "Cuir": 2 }, info: "Cuir : Chasse aux loups" },
+            { id: 3, name: "Potion Soin", ingredients: { "Herbe": 2, "Fiole": 1 }, info: "Herbe : Plaines / Fiole : Marchand" }
+        ];
 
-<script>
+        let cart = [];
 
-const crafts = [
-{
-    name:"Épée en fer",
-    materials:{
-        "Fer":5,
-        "Bois":2
-    }
-},
-{
-    name:"Armure en fer",
-    materials:{
-        "Fer":10,
-        "Cuir":3
-    }
-},
-{
-    name:"Arc",
-    materials:{
-        "Bois":4,
-        "Ficelle":2
-    }
-}
-];
-
-let selectedCrafts=[];
-
-function renderCrafts(){
-
-    const container=document.getElementById("crafts");
-
-    crafts.forEach((craft,index)=>{
-
-        const div=document.createElement("div");
-        div.className="craft";
-
-        let materialsHTML="";
-
-        for(let mat in craft.materials){
-            materialsHTML+=`${mat} : ${craft.materials[mat]}<br>`;
+        function renderItems() {
+            const menu = document.getElementById('itemsMenu');
+            database.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'item-card';
+                card.innerHTML = `
+                    <strong>${item.name}</strong>
+                    <span class="tooltip">${item.info}</span>
+                `;
+                card.onclick = () => addToCart(item);
+                menu.appendChild(card);
+            });
         }
 
-        div.innerHTML=`
-        <b>${craft.name}</b><br>
-        ${materialsHTML}
-        <button onclick="addCraft(${index})">Ajouter</button>
-        `;
-
-        container.appendChild(div);
-
-    });
-
-}
-
-function addCraft(index){
-
-    selectedCrafts.push(crafts[index]);
-    calculate();
-
-}
-
-function calculate(){
-
-    const total={};
-
-    selectedCrafts.forEach(craft=>{
-
-        for(let mat in craft.materials){
-
-            if(!total[mat]) total[mat]=0;
-
-            total[mat]+=craft.materials[mat];
-
+        function addToCart(item) {
+            cart.push(item);
+            updateUI();
         }
 
-    });
+        function updateUI() {
+            const listDiv = document.getElementById('selectedItems');
+            const resUl = document.getElementById('totalResources');
+            listDiv.innerHTML = "";
+            resUl.innerHTML = "";
 
-    let html="";
+            let totals = {};
 
-    for(let mat in total){
-        html+=`${mat} : ${total[mat]}<br>`;
-    }
+            // Afficher les items sélectionnés
+            cart.forEach((item, index) => {
+                listDiv.innerHTML += `<div class="craft-item">${item.name} <span style="color:red; cursor:pointer" onclick="removeItem(${index})">x</span></div>`;
+                
+                // Calculer les totaux
+                for (let res in item.ingredients) {
+                    totals[res] = (totals[res] || 0) + item.ingredients[res];
+                }
+            });
 
-    document.getElementById("result").innerHTML=html;
+            // Afficher le total des ressources
+            for (let res in totals) {
+                resUl.innerHTML += `<li>${res} : <strong>${totals[res]}</strong></li>`;
+            }
+        }
 
-}
+        function removeItem(index) {
+            cart.splice(index, 1);
+            updateUI();
+        }
 
-renderCrafts();
+        function clearAll() { cart = []; updateUI(); }
 
-</script>
-
+        renderItems();
+    </script>
 </body>
 </html>
