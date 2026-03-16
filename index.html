@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Calculateur de Crafts</title>
+<style>
+body{
+    font-family: Arial;
+    max-width: 900px;
+    margin:auto;
+}
+
+.craft{
+    border:1px solid #ccc;
+    padding:10px;
+    margin:10px;
+}
+
+button{
+    margin-top:5px;
+}
+
+#result{
+    background:#f4f4f4;
+    padding:10px;
+    margin-top:20px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Liste des Crafts</h1>
+
+<div id="crafts"></div>
+
+<h2>Matériaux nécessaires</h2>
+<div id="result"></div>
+
+<script>
+
+const crafts = [
+{
+    name:"Épée en fer",
+    materials:{
+        "Fer":5,
+        "Bois":2
+    }
+},
+{
+    name:"Armure en fer",
+    materials:{
+        "Fer":10,
+        "Cuir":3
+    }
+},
+{
+    name:"Arc",
+    materials:{
+        "Bois":4,
+        "Ficelle":2
+    }
+}
+];
+
+let selectedCrafts=[];
+
+function renderCrafts(){
+
+    const container=document.getElementById("crafts");
+
+    crafts.forEach((craft,index)=>{
+
+        const div=document.createElement("div");
+        div.className="craft";
+
+        let materialsHTML="";
+
+        for(let mat in craft.materials){
+            materialsHTML+=`${mat} : ${craft.materials[mat]}<br>`;
+        }
+
+        div.innerHTML=`
+        <b>${craft.name}</b><br>
+        ${materialsHTML}
+        <button onclick="addCraft(${index})">Ajouter</button>
+        `;
+
+        container.appendChild(div);
+
+    });
+
+}
+
+function addCraft(index){
+
+    selectedCrafts.push(crafts[index]);
+    calculate();
+
+}
+
+function calculate(){
+
+    const total={};
+
+    selectedCrafts.forEach(craft=>{
+
+        for(let mat in craft.materials){
+
+            if(!total[mat]) total[mat]=0;
+
+            total[mat]+=craft.materials[mat];
+
+        }
+
+    });
+
+    let html="";
+
+    for(let mat in total){
+        html+=`${mat} : ${total[mat]}<br>`;
+    }
+
+    document.getElementById("result").innerHTML=html;
+
+}
+
+renderCrafts();
+
+</script>
+
+</body>
+</html>
