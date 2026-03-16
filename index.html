@@ -279,65 +279,108 @@ function renderTable() {
 }
 
 // Ajouter à la liste de craft
-function addToCraft(id) {
-  // Regrouper toutes les catégories
-  const allItems = Object.values(database).flat();
-  const item = allItems.find(i => i.id === id);
-  if (!item) return;
-  const qty = parseInt(document.getElementById(`qty-${id}`).value) || 1;
-  const existing = shoppingList.find(i => i.id === id);
-  if (existing) existing.selectedQty += qty;
-  else shoppingList.push({...item, selectedQty: qty});
-  updateUI();
+function addToCraft(id){
+    const allItems = Object.values(database).flat();
+    const item = allItems.find(i => i.id === id);
+    if(!item) return;
+
+    // On récupère la quantité tapée
+    const qtyInput = document.getElementById(`qty-${id}`);
+    const qty = parseInt(qtyInput.value) || 1;
+
+    // Mise à jour dans le tableau shoppingList
+    const existing = shoppingList.find(i => i.id === id);
+    if(existing){
+        existing.selectedQty += qty;
+    } else {
+        shoppingList.push({...item, selectedQty: qty});
+    }
+
+    // On met à jour uniquement la liste de craft, pas tout le tableau
+    updateCraftListUI();
 }
 
-// Mettre à jour l'UI
-function updateUI() {
-  const selectedDiv = document.getElementById("selectedItems");
-  const totalUl = document.getElementById("totalResources");
-  const stockDiv = document.getElementById("stockList");
-  selectedDiv.innerHTML = ""; totalUl.innerHTML = "";
-  if (shoppingList.length === 0) {
-    document.getElementById("stockSection").style.display = "none";
-    document.getElementById("resultsArea").style.display = "none";
-    return;
-  }
-  document.getElementById("stockSection").style.display = "block";
-  document.getElementById("resultsArea").style.display = "block";
-  shoppingList.sort((a,b)=>a.name.localeCompare(b.name));
-  let totals = {};
-  shoppingList.forEach((item,index)=>{
-    selectedDiv.innerHTML += `<div class="list-item"><span>${item.selectedQty}x <strong>${item.name}</strong></span>
-      <span onclick="removeItem(${index})" style="cursor:pointer;color:red">✕</span></div>`;
-    for(let [res,val] of Object.entries(item.ingredients))
-      totals[res]=(totals[res]||0)+(val*item.selectedQty);
-  });
-  const sorted = Object.keys(totals).sort();
-  stockDiv.innerHTML = sorted.map(res => {
-  const val = myStock[res] || 0;
-  return `<tr>
-    <td style="padding:6px 10px;">${res}</td>
-    <td style="padding:6px 10px;">
-      <input type="number" class="stock-input" value="${val}" oninput="updateStock('${res}',this.value)">
-    </td>
-  </tr>`;
-  }).join("");
-  sorted.forEach(res=>{
-    const total = totals[res], have = myStock[res]||0, miss = total-have;
-    if(miss<=0) totalUl.innerHTML += `<li class="possede">✅ ${res} OK (${have}/${total})</li>`;
-    else totalUl.innerHTML += `<li class="manquant">❌ Manque ${miss} ${res}</li>`;
-  });
+// Mettre à jour la liste de craft à droite sans toucher au tableau de gauche
+function updateCraftListUI(){
+    const selectedDiv = document.getElementById("selectedItems");
+    const totalUl = document.getElementById("totalResources");
+    const stockDiv = document.getElementById("stockList");
+    selectedDiv.innerHTML = "";
+    totalUl.innerHTML = "";
+    stockDiv.innerHTML = "";
+
+    if(shoppingList.length === 0){
+        document.getElementById("stockSection").style.display="none";
+        document.getElementById("resultsArea").style.display="none";
+        return;
+    }
+
+    document.getElementById("stockSection").style.display="block";
+    document.getElementById("resultsArea").style.display="block";
+
+    shoppingList.sort((a,b)=>a.name.localeCompare(b.name));
+
+    // 1️⃣ Liste des crafts sélectionnés
+    shoppingList.forEach((item,index)=>{
+        selectedDiv.innerHTML += `
+            <div class="list-item">
+                <span>${item.selectedQty}x <strong>${item.name}</strong></span>
+                <span onclick="removeItem(${index})" style="cursor:pointer;color:red">✕</span>
+            </div>`;
+    });
+
+    // 2️⃣ Calcul des totaux
+    let totals = {};
+    shoppingList.forEach(item=>{
+        for(let [res,val] of Object.entries(item.ingredients)){
+            totals[res] = (totals[res]||0) + val*item.selectedQty;
+        }
+    });
+
+    // 3️⃣ Affichage stock
+    Object.keys(totals).sort().forEach(res=>{
+        const val = myStock[res]||0;
+        stockDiv.innerHTML += `
+            <tr>
+                <td style="padding:6px 10px;">${res}</td>
+                <td style="padding:6px 10px;">
+                    <input type="number" class="stock-input" value="${val}" oninput="updateStock('${res}',this.value)">
+                </td>
+            </tr>`;
+    });
+
+    // 4️⃣ Affichage total restant
+    Object.keys(totals).sort().forEach(res=>{
+        const total = totals[res], have = myStock[res]||0, miss = total-have;
+        if(miss<=0) totalUl.innerHTML += `<li class="possede">✅ ${res} OK (${have}/${total})</li>`;
+        else totalUl.innerHTML += `<li class="manquant">❌ Manque ${miss} ${res}</li>`;
+    });
 }
 
 // Fonctions utilitaires
-function updateStock(res,val){ myStock[res]=parseInt(val)||0; updateUI(); }
-function removeItem(index){ shoppingList.splice(index,1); updateUI(); }
-function clearAll(){ shoppingList=[]; updateUI(); }
-function filterTable(){
-  let input=document.getElementById("searchInput").value.toLowerCase();
-  document.querySelectorAll("#tableBody tr").forEach(r=>{
-    r.style.display = r.innerText.toLowerCase().includes(input) ? "" : "none";
-  });
+function updateStock(res,val){ myStock[res]=parseInt(val)||0; updateCraftListUI(); }
+function removeItem(index){ shoppingList.splice(index,1); updateCraftListUI(); }
+function clearAll(){ shoppingList=[]; updateCraftListUI(); }
+function filterTable() {
+    const input = document.getElementById("searchInput").value.toLowerCase();
+    const body = document.getElementById("tableBody");
+    body.innerHTML = ""; // vider le tableau
+
+    // Parcourir toutes les catégories
+    Object.values(database).flat().forEach(item => {
+        if (item.name.toLowerCase().includes(input)) {
+            const ing = Object.entries(item.ingredients).map(([n, q]) => `${q} ${n}`).join(", ");
+            body.innerHTML += `<tr>
+                <td><strong>${item.name}</strong></td>
+                <td>${ing}</td>
+                <td><input type="number" value="1" min="1" id="qty-${item.id}" class="qty-input"></td>
+                <td><button class="btn-add" onclick="addToCraft('${item.id}')">Ajouter</button></td>
+            </tr>`;
+        }
+    });
+
+    // Si la barre de recherche est vide, on revient à la catégorie courante
+    if (input === "") renderTable();
 }
 function switchTab(cat){
   currentCategory = cat;
